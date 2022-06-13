@@ -16,7 +16,7 @@ namespace WorkflowEngine
         {
         }
 
-        public virtual DbSet<Attribute> Attributes { get; set; } = null!;
+        public virtual DbSet<AttributeDB> Attributes { get; set; } = null!;
         public virtual DbSet<ConditionDB> Conditions { get; set; } = null!;
         public virtual DbSet<NextIdDB> NextIds { get; set; } = null!;
         public virtual DbSet<SchemeDB> Schemes { get; set; } = null!;

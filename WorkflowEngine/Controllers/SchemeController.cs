@@ -13,46 +13,53 @@ namespace WorkflowEngine.Controllers
         [HttpPost]
         public ObjectResult PostScheme(Scheme scheme)
         {
-            List<AbstractSchemePart> dbContext = new List<AbstractSchemePart>();
             SchemeDB schemeDB = new SchemeDB();
             schemeDB.SchemeId = int.Parse(scheme.SchemeId);
             schemeDB.CurrentState = int.Parse(scheme.CurrentState);
+            foreach (var p in scheme.Attributes)
+            {
+                AttributeDB attr = new AttributeDB();
+                attr.SchemeId = int.Parse(scheme.SchemeId);
+                attr.AttributeName = p.Name;
+                attr.AttributeValue = p.Value;
+                db.Attributes.Add(attr);
+            }
             foreach (var p in scheme.SchemeParts)
             {
-                switch (p.Type)
+                SchemePartDB sPart = new SchemePartDB();
+                sPart.SchemeId = int.Parse(scheme.SchemeId);
+                sPart.PartName = p.ObjName;
+                sPart.PartId = int.Parse(p.PartID);
+                sPart.Type = int.Parse(p.Type);
+
+                foreach (var x in p.NextIDs)
                 {
-                    case "State":
-                        var statePart = new State();
-                        statePart.Name = p.ObjName;
-                        statePart.PartId = int.Parse(p.PartID);
-                        statePart.NextIds = p.NextIDs.Select(int.Parse).ToList();
-                        statePart.SchemeId = int.Parse(scheme.SchemeId);
-                        dbContext.Add(statePart);
-                        break;
-                    case "Start":
-                        var startPart = new Start();
-                        startPart.PartId = int.Parse(p.PartID);
-                        startPart.NextIds = p.NextIDs.Select(int.Parse).ToList();
-                        startPart.SchemeId = int.Parse(scheme.SchemeId);
-                        dbContext.Add(startPart);
-                        break;
-                    case "End":
-                        var endPart = new End();
-                        endPart.PartId = int.Parse(p.PartID);                      
-                        endPart.SchemeId = int.Parse(scheme.SchemeId);
-                        dbContext.Add(endPart);
-                        break;
-                    case "Gate":
-                        var gatePart = new Gate();
-                        gatePart.PartId = int.Parse(p.PartID);
-                        gatePart.NextIds = p.NextIDs.Select(int.Parse).ToList();
-                        gatePart.SchemeId = int.Parse(scheme.SchemeId);
-                        gatePart.Conditions = p.Conditions;
-                        dbContext.Add(gatePart);
-                        break;                  
+                    NextIdDB next = new NextIdDB();
+                    next.SchemeId = int.Parse(scheme.SchemeId);
+                    next.PartId = sPart.PartId;
+                    next.NextId1 = int.Parse(x);
+                    db.NextIds.Add(next);
                 }
-                
+
+                switch (sPart.Type)
+                {
+                    case (int)PartTypes.Gate:
+                        foreach (var x in p.Conditions)
+                        {
+                            ConditionDB con = new ConditionDB();
+                            con.SchemeId = int.Parse(scheme.SchemeId);
+                            con.PartId = sPart.PartId;
+                            con.Condition1 = x.Cond;
+                            db.Conditions.Add(con);
+                        }
+                    break;
+                }
+
+                db.SchemeParts.Add(sPart);
             }
+
+            db.Schemes.Add(schemeDB);
+
             return Ok(scheme);
         }
     }
