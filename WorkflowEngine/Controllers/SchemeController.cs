@@ -62,5 +62,34 @@ namespace WorkflowEngine.Controllers
 
             return Ok(scheme);
         }
+
+        [HttpDelete]
+        public ActionResult DeleteScheme(int id)
+        {
+            var scheme = db.Schemes.First(i => i.SchemeId == id);
+            db.Schemes.Remove(scheme);
+            return Ok();
+        }
+
+        [HttpPut]
+        public ObjectResult PutScheme(Scheme scheme)
+        {
+            db.Entry(scheme).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+            db.SaveChanges();
+            return Ok(scheme);
+        }
+
+        [HttpGet]
+        public ActionResult GetScheme(int id)
+        {
+            var scheme = db.Schemes.First(i => i.SchemeId == id);
+
+            if (scheme == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(scheme);
+        }
     }
 }

@@ -1,5 +1,8 @@
-﻿/*using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using WorkflowEngine.Models;
+using WorkflowEngine.Models.JSONModels;
 
 namespace WorkflowEngine.Controllers
 {
@@ -7,80 +10,50 @@ namespace WorkflowEngine.Controllers
     [Route("[controller]")]
     public class ExternalController : Controller
     {
-        // GET: ExternalController
-        public ActionResult Index()
-        {
-            return View();
-        }
-
-        // GET: ExternalController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: ExternalController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: ExternalController/Create
+        private WorflowEngineContext db = new WorflowEngineContext();
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ObjectResult PostExternalQuery(ExternalQuery externalQuery)
         {
-            try
+            if (externalQuery.CommandType == "GoTo")
             {
-                return RedirectToAction(nameof(Index));
+                var scheme = db.Schemes.First(i => i.SchemeId == int.Parse(externalQuery.SchemeID));
+
+                scheme.CurrentState = db.NextIds.First(i => i.SchemeId == int.Parse(externalQuery.SchemeID) && i.PartId == scheme.CurrentState).PartId;
+
+                db.SaveChanges();
             }
-            catch
+            else
             {
-                return View();
+                var scheme = db.Schemes.First(i => i.SchemeId == int.Parse(externalQuery.SchemeID));
+                RequestToParser(scheme);
             }
+            return Ok(externalQuery);
         }
 
-        // GET: ExternalController/Edit/5
-        public ActionResult Edit(int id)
+        private void RequestToParser(SchemeDB scheme)
         {
-            return View();
-        }
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://parser");
+            httpWebRequest.ContentType = "application/json";
+            httpWebRequest.Method = "POST";
 
-        // POST: ExternalController/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
-        {
-            try
+            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
             {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
 
-        // GET: ExternalController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
+                foreach(var cond in db.Conditions)
+                {
+                    string json = $"\"SchemeID\":\"{cond.SchemeId}\"," +
+                                  $"\"PartID\":\"{cond.PartId}\"" +
+                                  $"\"Condition1\":\"{cond.Condition1}\"";
 
-        // POST: ExternalController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
+                    streamWriter.Write(json);
+
+                    var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = streamReader.ReadToEnd();
+                    }
+                }
             }
         }
     }
 }
-*/
